@@ -10,6 +10,21 @@ export interface CommitInfo {
   author: string;
   timestamp: number;
   parents: string[];
+  is_signed: boolean;
+  public_key: string | null;
+  signature: string | null;
+}
+
+export interface KeyPair {
+  public_key: string;
+  private_key: string;
+}
+
+export interface SignatureVerification {
+  commit_id: string;
+  is_signed: boolean;
+  verified: boolean;
+  public_key: string | null;
 }
 
 export interface DiffEntry {
@@ -70,6 +85,16 @@ declare global {
       readFileLarge: (filePath: string) => Promise<{ buffer: SharedArrayBuffer; size: number; path: string } | { error: string }>;
       writeFileLarge: (filePath: string, buffer: SharedArrayBuffer, size: number) => Promise<{ success: boolean; size: number } | { error: string }>;
       readBlobLarge: (hash: string) => Promise<{ buffer: SharedArrayBuffer; size: number; hash: string } | { error: string }>;
+      enableAutoStaging: () => Promise<{ enabled: boolean }>;
+      disableAutoStaging: () => Promise<{ enabled: boolean }>;
+      isAutoStagingEnabled: () => Promise<{ enabled: boolean }>;
+      commitSigned: (message: string, author: string, keyName: string) => Promise<{ commitId: string } | { error: string }>;
+      generateKeypair: (name: string) => Promise<KeyPair | { error: string }>;
+      listKeys: () => Promise<string[] | { error: string }>;
+      verifyCommit: (commitId: string) => Promise<SignatureVerification | { error: string }>;
+      getCommitAtTime: (timestamp: number) => Promise<CommitInfo | null | { error: string }>;
+      getFileTreeAtCommit: (commitId: string) => Promise<TreeNode | { error: string }>;
+      onStagingUpdated: (callback: () => void) => () => void;
     };
   }
 }

@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { CommitInfo, BranchInfo } from '../types';
+import { CommitInfo, BranchInfo, SignatureVerification } from '../types';
 
 interface CommitGraphProps {
   commits: CommitInfo[];
   branches: BranchInfo[];
   onSelectDiff: (oldCommit: string, newCommit: string) => void;
+  onVerifyCommit: (commitId: string) => void;
+  verificationStatus: Map<string, SignatureVerification>;
 }
 
 interface GraphNode {
@@ -31,7 +33,7 @@ function truncateHash(hash: string): string {
   return hash.slice(0, 7);
 }
 
-export default function CommitGraph({ commits, branches, onSelectDiff }: CommitGraphProps) {
+export default function CommitGraph({ commits, branches, onSelectDiff, onVerifyCommit, verificationStatus }: CommitGraphProps) {
   const [selectedCommit, setSelectedCommit] = useState<string | null>(null);
 
   const { nodes, edges } = useMemo(() => {
@@ -180,20 +182,37 @@ export default function CommitGraph({ commits, branches, onSelectDiff }: CommitG
                 onClick={() => handleCommitClick(node.commit.id)}
               >
                 <div className="commit-info">
-                  <div className="commit-message">
-                    {commitBranches.map((b) => (
-                      <span key={b.name} className="commit-branch">
-                        {b.name}
-                      </span>
-                    ))}
-                    {node.commit.message}
+                    <div className="commit-message">
+                      {commitBranches.map((b) => (
+                        <span key={b.name} className="commit-branch">
+                          {b.name}
+                        </span>
+                      ))}
+                      {node.commit.is_signed && (
+                        <span className={`commit-signature ${verificationStatus.get(node.commit.id)?.verified ? 'verified' : verificationStatus.has(node.commit.id) ? 'unverified' : ''}`}>
+                          {verificationStatus.get(node.commit.id)?.verified ? '✅ 已验证' : verificationStatus.has(node.commit.id) ? '❌ 验证失败' : '🔐 已签名'}
+                        </span>
+                      )}
+                      {node.commit.message}
+                    </div>
+                    <div className="commit-meta">
+                      <span className="commit-hash">{truncateHash(node.commit.id)}</span>
+                      <span>{node.commit.author}</span>
+                      <span>{formatTimestamp(node.commit.timestamp)}</span>
+                      {node.commit.is_signed && (
+                        <button
+                          className="btn btn-small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onVerifyCommit(node.commit.id);
+                          }}
+                          style={{ padding: '2px 8px', fontSize: 11 }}
+                        >
+                          {verificationStatus.has(node.commit.id) ? '重新验证' : '验证签名'}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className="commit-meta">
-                    <span className="commit-hash">{truncateHash(node.commit.id)}</span>
-                    <span>{node.commit.author}</span>
-                    <span>{formatTimestamp(node.commit.timestamp)}</span>
-                  </div>
-                </div>
               </div>
             );
           })}

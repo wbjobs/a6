@@ -662,3 +662,393 @@ input[type="checkbox"] {
   color: #6c7086;
   font-style: italic;
 }
+
+.auto-staging-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auto-staging-label {
+  font-size: 13px;
+  color: #a6adc8;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 20px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #45475a;
+  transition: 0.2s;
+  border-radius: 20px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.2s;
+  border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: #a6e3a1;
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(20px);
+}
+
+.toggle-switch input:disabled + .toggle-slider {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.time-travel-indicator {
+  font-size: 12px;
+  padding: 4px 8px;
+  background: rgba(249, 226, 175, 0.2);
+  color: #f9e2af;
+  border-radius: 4px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.time-travel-container {
+  background: #181825;
+  border-bottom: 1px solid #313244;
+  padding: 16px 20px;
+}
+
+.time-travel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.time-travel-title {
+  font-size: 16px;
+  color: #89b4fa;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-travel-icon {
+  font-size: 20px;
+}
+
+.exit-time-travel {
+  padding: 6px 12px;
+  background: #f38ba8;
+  color: #1e1e2e;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.exit-time-travel:hover {
+  background: #eba0ac;
+}
+
+.time-travel-slider-container {
+  position: relative;
+  padding: 20px 0 10px;
+}
+
+.time-travel-marks {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 8px;
+  pointer-events: none;
+}
+
+.time-travel-mark {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.time-travel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #45475a;
+  transition: all 0.2s;
+}
+
+.time-travel-mark.active .time-travel-dot {
+  background: #89b4fa;
+  transform: scale(1.3);
+}
+
+.time-travel-mark:hover .time-travel-dot {
+  transform: scale(1.5);
+  background: #89dceb;
+}
+
+.time-travel-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #313244;
+  border: 1px solid #45475a;
+  border-radius: 6px;
+  padding: 8px 12px;
+  white-space: nowrap;
+  z-index: 100;
+  margin-bottom: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.time-travel-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #313244;
+}
+
+.tooltip-message {
+  font-weight: 600;
+  color: #cdd6f4;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.tooltip-author {
+  font-size: 11px;
+  color: #a6adc8;
+  margin-bottom: 2px;
+}
+
+.tooltip-date {
+  font-size: 11px;
+  color: #6c7086;
+}
+
+.time-travel-slider {
+  width: 100%;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(to right, #89b4fa 0%, #89b4fa var(--progress, 100%), #45475a var(--progress, 100%), #45475a 100%);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+
+.time-travel-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #89b4fa;
+  cursor: pointer;
+  border: 3px solid #181825;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s;
+}
+
+.time-travel-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.time-travel-slider:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.time-travel-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #6c7086;
+}
+
+.time-travel-commit-info {
+  margin-top: 16px;
+  padding: 16px;
+  background: #1e1e2e;
+  border-radius: 6px;
+  border: 1px solid #313244;
+  transition: all 0.2s;
+}
+
+.time-travel-commit-info.time-traveling {
+  border-color: #f9e2af;
+  background: rgba(249, 226, 175, 0.05);
+}
+
+.commit-info-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.commit-info-message {
+  font-weight: 600;
+  color: #cdd6f4;
+  font-size: 14px;
+}
+
+.commit-signature-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  background: rgba(166, 227, 161, 0.2);
+  color: #a6e3a1;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.commit-info-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: #6c7086;
+  margin-bottom: 4px;
+}
+
+.commit-info-id {
+  font-size: 11px;
+  color: #89dceb;
+  font-family: 'Courier New', monospace;
+}
+
+.time-travel-warning {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(249, 226, 175, 0.1);
+  color: #f9e2af;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.time-travel-view {
+  position: relative;
+}
+
+.time-travel-view::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(249, 226, 175, 0.02) 10px,
+    rgba(249, 226, 175, 0.02) 20px
+  );
+  pointer-events: none;
+  z-index: 1;
+  border-radius: 8px;
+}
+
+.commit-signature {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-right: 8px;
+  font-weight: 600;
+}
+
+.commit-signature.verified {
+  background: rgba(166, 227, 161, 0.2);
+  color: #a6e3a1;
+}
+
+.commit-signature.unverified {
+  background: rgba(243, 139, 168, 0.2);
+  color: #f38ba8;
+}
+
+.commit-signature:not(.verified):not(.unverified) {
+  background: rgba(137, 180, 250, 0.2);
+  color: #89b4fa;
+}
+
+.btn-small {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #a6adc8;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-label input {
+  width: 16px;
+  height: 16px;
+}
+
+.form-group select {
+  width: 100%;
+  padding: 8px 12px;
+  background: #1e1e2e;
+  border: 1px solid #313244;
+  border-radius: 6px;
+  color: #cdd6f4;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.form-group select:focus {
+  outline: none;
+  border-color: #89b4fa;
+}
+
+.form-group select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

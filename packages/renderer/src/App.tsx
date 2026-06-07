@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './types';
 import FileTreeView from './components/FileTreeView';
 import DiffView from './components/DiffView';
 import CommitGraph from './components/CommitGraph';
 import StatusPanel from './components/StatusPanel';
 import BranchSelector from './components/BranchSelector';
-import { FileStatus, CommitInfo, BranchInfo, DiffEntry, TreeNode } from './types';
+import { TimeTravelSlider } from './components/TimeTravelSlider';
+import { FileStatus, CommitInfo, BranchInfo, DiffEntry, TreeNode, SignatureVerification } from './types';
 
 type ViewMode = 'files' | 'diff' | 'graph' | 'status';
 
@@ -26,6 +27,16 @@ export default function App() {
   const [commitMessage, setCommitMessage] = useState('');
   const [author, setAuthor] = useState('User <user@example.com>');
   const [newBranchName, setNewBranchName] = useState('');
+  const [autoStagingEnabled, setAutoStagingEnabled] = useState(false);
+  const [keys, setKeys] = useState<string[]>([]);
+  const [selectedKey, setSelectedKey] = useState<string>('');
+  const [useSignedCommit, setUseSignedCommit] = useState(false);
+  const [isTimeTraveling, setIsTimeTraveling] = useState(false);
+  const [timeTravelCommit, setTimeTravelCommit] = useState<CommitInfo | null>(null);
+  const [timeTravelTree, setTimeTravelTree] = useState<TreeNode | null>(null);
+  const [verificationStatus, setVerificationStatus] = useState<Map<string, SignatureVerification>>(new Map());
+  const [newKeyName, setNewKeyName] = useState('');
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const refreshData = useCallback(async () => {
     if (!repoPath) return;
@@ -61,10 +72,6 @@ export default function App() {
       setLoading(false);
     }
   }, [repoPath]);
-
-  useEffect(() => {
-    refreshData();
-  }, [refreshData]);
 
   const handleOpenRepo = async () => {
     const result = await window.vfsApi.openRepo();
@@ -141,6 +148,143 @@ export default function App() {
     }
   };
 
+  const loadAutoStagingStatus = useCallback(async () => {
+    if (!repoPath) return;
+    try {
+      const result = await window.vfsApi.isAutoStagingEnabled();
+      if ('enabled' in result) {
+        setAutoStagingEnabled(result.enabled);
+      }
+    } catch (e: any) {
+      console.error('Failed to load auto-staging status:', e);
+    }
+  }, [repoPath]);
+
+  const loadKeys = useCallback(async () => {
+    if (!repoPath) return;
+    try {
+      const result = await window.vfsApi.listKeys();
+      if (!('error' in result)) {
+        setKeys(result);
+        if (result.length > 0 && !selectedKey) {
+          setSelectedKey(result[0]);
+        }
+      }
+    } catch (e: any) {
+      console.error('Failed to load keys:', e);
+    }
+  }, [repoPath, selectedKey]);
+
+  const toggleAutoStaging = async () => {
+    try {
+      const result = autoStagingEnabled
+        ? await window.vfsApi.disableAutoStaging()
+        : await window.vfsApi.enableAutoStaging();
+      if ('enabled' in result) {
+        setAutoStagingEnabled(result.enabled);
+      }
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
+  const handleGenerateKey = async () => {
+    if (!newKeyName.trim()) {
+      setError('Key name is required');
+      return;
+    }
+    try {
+      const result = await window.vfsApi.generateKeypair(newKeyName.trim());
+      if ('error' in result) {
+        setError(result.error);
+      } else {
+        setNewKeyName('');
+        loadKeys();
+      }
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
+  const handleSignedCommit = async () => {
+    if (!commitMessage.trim()) {
+      setError('Commit message is required');
+      return;
+    }
+    if (!selectedKey) {
+      setError('Please select a signing key or generate one first');
+      return;
+    }
+    try {
+      const result = await window.vfsApi.commitSigned(
+        commitMessage.trim(),
+        author,
+        selectedKey
+      );
+      if ('error' in result) {
+        setError(result.error);
+      } else {
+        setCommitMessage('');
+        refreshData();
+      }
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
+  const handleVerifyCommit = async (commitId: string) => {
+    try {
+      const result = await window.vfsApi.verifyCommit(commitId);
+      if (!('error' in result)) {
+        setVerificationStatus(prev => new Map(prev).set(commitId, result));
+      }
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
+  const handleTimeTravel = async (commit: CommitInfo | null) => {
+    if (!commit) {
+      handleExitTimeTravel();
+      return;
+    }
+    try {
+      setIsTimeTraveling(true);
+      setTimeTravelCommit(commit);
+      const result = await window.vfsApi.getFileTreeAtCommit(commit.id);
+      if (!('error' in result)) {
+        setTimeTravelTree(result);
+      }
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
+  const handleExitTimeTravel = () => {
+    setIsTimeTraveling(false);
+    setTimeTravelCommit(null);
+    setTimeTravelTree(null);
+    refreshData();
+  };
+
+  useEffect(() => {
+    if (repoPath) {
+      refreshData();
+      loadAutoStagingStatus();
+      loadKeys();
+    }
+  }, [repoPath, refreshData, loadAutoStagingStatus, loadKeys]);
+
+  useEffect(() => {
+    if (!repoPath) return;
+
+    const cleanup = window.vfsApi.onStagingUpdated(() => {
+      refreshData();
+    });
+
+    return cleanup;
+  }, [repoPath, refreshData]);
+
   if (!repoPath) {
     return (
       <div className="welcome-screen">
@@ -174,8 +318,27 @@ export default function App() {
         <div className="header-left">
           <h1>VFS Desktop</h1>
           <span className="repo-path">{repoPath}</span>
+          {isTimeTraveling && (
+            <span className="time-travel-indicator">
+              ⏰ 时间旅行模式
+            </span>
+          )}
         </div>
         <div className="header-right">
+          <div className="auto-staging-toggle">
+            <label className="toggle-switch">
+              <input
+                type="checkbox"
+                checked={autoStagingEnabled}
+                onChange={toggleAutoStaging}
+                disabled={isTimeTraveling}
+              />
+              <span className="toggle-slider"></span>
+            </label>
+            <span className="auto-staging-label">
+              自动暂存
+            </span>
+          </div>
           <BranchSelector
             branches={branches}
             currentBranch={currentBranch}
@@ -186,6 +349,13 @@ export default function App() {
           </button>
         </div>
       </header>
+
+      <TimeTravelSlider
+        commits={[...commits].reverse()}
+        onTimeTravel={handleTimeTravel}
+        isTimeTraveling={isTimeTraveling}
+        onExitTimeTravel={handleExitTimeTravel}
+      />
 
       <nav className="tabs">
         <button
@@ -224,12 +394,15 @@ export default function App() {
       )}
 
       <main className="app-main">
-        {viewMode === 'files' && fileTree && (
-          <FileTreeView
-            tree={fileTree}
-            onAddFile={handleAddFile}
-            status={status}
-          />
+        {viewMode === 'files' && (isTimeTraveling ? timeTravelTree : fileTree) && (
+          <div className={isTimeTraveling ? 'time-travel-view' : ''}>
+            <FileTreeView
+              tree={isTimeTraveling ? timeTravelTree! : fileTree!}
+              onAddFile={handleAddFile}
+              status={status}
+              readOnly={isTimeTraveling}
+            />
+          </div>
         )}
         {viewMode === 'status' && (
           <StatusPanel
@@ -241,9 +414,19 @@ export default function App() {
             author={author}
             setAuthor={setAuthor}
             onCommit={handleCommit}
+            onSignedCommit={handleSignedCommit}
+            useSignedCommit={useSignedCommit}
+            setUseSignedCommit={setUseSignedCommit}
+            selectedKey={selectedKey}
+            setSelectedKey={setSelectedKey}
+            keys={keys}
+            newKeyName={newKeyName}
+            setNewKeyName={setNewKeyName}
+            onGenerateKey={handleGenerateKey}
             newBranchName={newBranchName}
             setNewBranchName={setNewBranchName}
             onCreateBranch={handleCreateBranch}
+            disabled={isTimeTraveling}
           />
         )}
         {viewMode === 'diff' && (
@@ -257,6 +440,8 @@ export default function App() {
             commits={commits}
             branches={branches}
             onSelectDiff={handleShowDiff}
+            onVerifyCommit={handleVerifyCommit}
+            verificationStatus={verificationStatus}
           />
         )}
       </main>

@@ -1,11 +1,15 @@
 import { app, BrowserWindow, ipcMain, dialog, protocol, net } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
-import { loadVfsModule, VfsRepo, FileStatus, CommitInfo, DiffEntry, BranchInfo } from '@vfs/core';
+import * as chokidar from 'chokidar';
+import { loadVfsModule, VfsRepo, FileStatus, CommitInfo, DiffEntry, BranchInfo, KeyPair, SignatureVerification } from '@vfs/core';
 
 let mainWindow: BrowserWindow | null = null;
 let repo: VfsRepo | null = null;
 let currentRepoPath: string | null = null;
+let fileWatcher: chokidar.FSWatcher | null = null;
+let autoStagingEnabled = false;
+let debounceTimer: NodeJS.Timeout | null = null;
 
 const { VfsRepo: VfsRepoClass } = loadVfsModule();
 
@@ -340,6 +344,135 @@ ipcMain.handle('read-blob-large', async (event, hash: string) => {
       size: buffer.length,
       hash,
     };
+  } catch (e: any) {
+    return { error: e.message };
+  }
+});
+
+function startFileWatcher() {
+  if (!currentRepoPath || !repo) return;
+
+  if (fileWatcher) {
+    fileWatcher.close();
+  }
+
+  fileWatcher = chokidar.watch(currentRepoPath, {
+    ignored: [/\.vfs(?:[\/\\]|$)/, /node_modules/],
+    persistent: true,
+    ignoreInitial: true,
+  });
+
+  const handleChange = (filePath: string) => {
+    if (!repo || !autoStagingEnabled) return;
+
+    const relativePath = path.relative(currentRepoPath!, filePath).replace(/\\/g, '/');
+    if (!relativePath || relativePath.startsWith('.vfs')) return;
+
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+
+    debounceTimer = setTimeout(async () => {
+      try {
+        const fullPath = path.join(currentRepoPath!, relativePath);
+        if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
+          repo.addFile(relativePath);
+        } else if (!fs.existsSync(fullPath)) {
+          repo.removeFile(relativePath);
+        }
+        if (mainWindow) {
+          mainWindow.webContents.send('staging-updated');
+        }
+      } catch (e) {
+        console.error('Auto-staging error:', e);
+      }
+    }, 500);
+  };
+
+  fileWatcher
+    .on('add', handleChange)
+    .on('change', handleChange)
+    .on('unlink', handleChange);
+}
+
+function stopFileWatcher() {
+  if (fileWatcher) {
+    fileWatcher.close();
+    fileWatcher = null;
+  }
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
+}
+
+ipcMain.handle('enable-auto-staging', () => {
+  autoStagingEnabled = true;
+  startFileWatcher();
+  return { enabled: true };
+});
+
+ipcMain.handle('disable-auto-staging', () => {
+  autoStagingEnabled = false;
+  stopFileWatcher();
+  return { enabled: false };
+});
+
+ipcMain.handle('is-auto-staging-enabled', () => {
+  return { enabled: autoStagingEnabled };
+});
+
+ipcMain.handle('commit-signed', async (_event, message: string, author: string, keyName: string) => {
+  if (!repo) return { error: 'No repository opened' };
+  try {
+    const commitId = repo.commitSigned(message, author, keyName);
+    return { commitId };
+  } catch (e: any) {
+    return { error: e.message };
+  }
+});
+
+ipcMain.handle('generate-keypair', async (_event, name: string): Promise<KeyPair | { error: string }> => {
+  if (!repo) return { error: 'No repository opened' };
+  try {
+    return repo.generateKeypair(name);
+  } catch (e: any) {
+    return { error: e.message };
+  }
+});
+
+ipcMain.handle('list-keys', async (): Promise<string[] | { error: string }> => {
+  if (!repo) return { error: 'No repository opened' };
+  try {
+    return repo.listKeys();
+  } catch (e: any) {
+    return { error: e.message };
+  }
+});
+
+ipcMain.handle('verify-commit', async (_event, commitId: string): Promise<SignatureVerification | { error: string }> => {
+  if (!repo) return { error: 'No repository opened' };
+  try {
+    return repo.verifyCommit(commitId);
+  } catch (e: any) {
+    return { error: e.message };
+  }
+});
+
+ipcMain.handle('get-commit-at-time', async (_event, timestamp: number): Promise<CommitInfo | null | { error: string }> => {
+  if (!repo) return { error: 'No repository opened' };
+  try {
+    return repo.getCommitAtTime(timestamp);
+  } catch (e: any) {
+    return { error: e.message };
+  }
+});
+
+ipcMain.handle('get-file-tree-at-commit', async (_event, commitId: string) => {
+  if (!repo) return { error: 'No repository opened' };
+  try {
+    const jsonStr = repo.getFileTreeAtCommit(commitId);
+    return JSON.parse(jsonStr);
   } catch (e: any) {
     return { error: e.message };
   }

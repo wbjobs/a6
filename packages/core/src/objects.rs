@@ -158,6 +158,8 @@ pub struct Commit {
     pub author: String,
     pub message: String,
     pub timestamp: i64,
+    pub signature: Option<String>,
+    pub public_key: Option<String>,
 }
 
 impl Commit {
@@ -175,9 +177,26 @@ impl Commit {
             author,
             message,
             timestamp,
+            signature: None,
+            public_key: None,
         };
         commit.id = commit.hash();
         commit
+    }
+
+    pub fn with_signature(
+        mut self,
+        signature: String,
+        public_key: String,
+    ) -> Self {
+        self.signature = Some(signature);
+        self.public_key = Some(public_key);
+        self.id = self.hash();
+        self
+    }
+
+    pub fn is_signed(&self) -> bool {
+        self.signature.is_some() && self.public_key.is_some()
     }
 }
 
@@ -194,6 +213,12 @@ impl VfsObject for Commit {
         }
         s.push_str(&format!("author {}\n", self.author));
         s.push_str(&format!("timestamp {}\n", self.timestamp));
+        if let Some(sig) = &self.signature {
+            s.push_str(&format!("signature {}\n", sig));
+        }
+        if let Some(pk) = &self.public_key {
+            s.push_str(&format!("publickey {}\n", pk));
+        }
         s.push('\n');
         s.push_str(&self.message);
         s.into_bytes()
@@ -206,6 +231,8 @@ impl VfsObject for Commit {
         let mut parents = Vec::new();
         let mut author = String::new();
         let mut timestamp = 0;
+        let mut signature: Option<String> = None;
+        let mut public_key: Option<String> = None;
         let message;
 
         while let Some(line) = lines.next() {
@@ -221,6 +248,8 @@ impl VfsObject for Commit {
                     "timestamp" => {
                         timestamp = parts[1].parse::<i64>().map_err(|e| e.to_string())?
                     }
+                    "signature" => signature = Some(parts[1].to_string()),
+                    "publickey" => public_key = Some(parts[1].to_string()),
                     _ => {}
                 }
             }
@@ -235,6 +264,8 @@ impl VfsObject for Commit {
             author: author.clone(),
             message: message.clone(),
             timestamp,
+            signature: signature.clone(),
+            public_key: public_key.clone(),
         }
         .hash();
 
@@ -245,6 +276,8 @@ impl VfsObject for Commit {
             author,
             message,
             timestamp,
+            signature,
+            public_key,
         })
     }
 }

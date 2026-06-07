@@ -12,6 +12,21 @@ export interface CommitInfo {
   author: string;
   timestamp: number;
   parents: string[];
+  is_signed: boolean;
+  public_key: string | null;
+  signature: string | null;
+}
+
+export interface KeyPair {
+  public_key: string;
+  private_key: string;
+}
+
+export interface SignatureVerification {
+  commit_id: string;
+  is_signed: boolean;
+  verified: boolean;
+  public_key: string | null;
 }
 
 export interface DiffEntry {
@@ -88,6 +103,29 @@ const api = {
     ipcRenderer.invoke('write-file-large', filePath.replace(/\\/g, '/'), buffer, size),
   readBlobLarge: (hash: string): Promise<{ buffer: SharedArrayBuffer; size: number; hash: string } | { error: string }> =>
     ipcRenderer.invoke('read-blob-large', hash),
+  enableAutoStaging: (): Promise<{ enabled: boolean }> =>
+    ipcRenderer.invoke('enable-auto-staging'),
+  disableAutoStaging: (): Promise<{ enabled: boolean }> =>
+    ipcRenderer.invoke('disable-auto-staging'),
+  isAutoStagingEnabled: (): Promise<{ enabled: boolean }> =>
+    ipcRenderer.invoke('is-auto-staging-enabled'),
+  commitSigned: (message: string, author: string, keyName: string): Promise<{ commitId: string } | { error: string }> =>
+    ipcRenderer.invoke('commit-signed', message, author, keyName),
+  generateKeypair: (name: string): Promise<KeyPair | { error: string }> =>
+    ipcRenderer.invoke('generate-keypair', name),
+  listKeys: (): Promise<string[] | { error: string }> =>
+    ipcRenderer.invoke('list-keys'),
+  verifyCommit: (commitId: string): Promise<SignatureVerification | { error: string }> =>
+    ipcRenderer.invoke('verify-commit', commitId),
+  getCommitAtTime: (timestamp: number): Promise<CommitInfo | null | { error: string }> =>
+    ipcRenderer.invoke('get-commit-at-time', timestamp),
+  getFileTreeAtCommit: (commitId: string): Promise<any | { error: string }> =>
+    ipcRenderer.invoke('get-file-tree-at-commit', commitId),
+  onStagingUpdated: (callback: () => void) => {
+    const listener = () => callback();
+    ipcRenderer.on('staging-updated', listener);
+    return () => ipcRenderer.removeListener('staging-updated', listener);
+  },
 };
 
 contextBridge.exposeInMainWorld('vfsApi', api);

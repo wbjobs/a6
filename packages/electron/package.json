@@ -8,11 +8,13 @@
     "start": "electron ."
   },
   "dependencies": {
+    "@types/chokidar": "^2.1.7",
     "@vfs/core": "^0.1.0",
+    "chokidar": "^5.0.0",
     "electron": "^29.0.0"
   },
   "devDependencies": {
-    "typescript": "^5.4.0",
-    "@types/node": "^20.11.0"
+    "@types/node": "^20.11.0",
+    "typescript": "^5.4.0"
   }
 }

@@ -5,6 +5,7 @@ interface FileTreeViewProps {
   tree: TreeNode;
   onAddFile: (filePath: string) => void;
   status: FileStatus[];
+  readOnly?: boolean;
 }
 
 function getFileStatus(path: string, status: FileStatus[]): FileStatus | undefined {
@@ -16,11 +17,13 @@ function TreeNodeComponent({
   level = 0,
   onAddFile,
   status,
+  readOnly,
 }: {
   node: TreeNode;
   level?: number;
   onAddFile: (filePath: string) => void;
   status: FileStatus[];
+  readOnly?: boolean;
 }) {
   const [expanded, setExpanded] = useState(true);
   const fileStatus = node.path ? getFileStatus(node.path, status) : undefined;
@@ -33,7 +36,7 @@ function TreeNodeComponent({
 
   const handleAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (node.path) {
+    if (node.path && !readOnly) {
       onAddFile(node.path);
     }
   };
@@ -52,7 +55,7 @@ function TreeNodeComponent({
             {fileStatus.status}
           </span>
         )}
-        {!node.is_dir && node.path && (
+        {!node.is_dir && node.path && !readOnly && (
           <button className="add-btn" onClick={handleAdd}>
             + Stage
           </button>
@@ -67,6 +70,7 @@ function TreeNodeComponent({
               level={level + 1}
               onAddFile={onAddFile}
               status={status}
+              readOnly={readOnly}
             />
           ))}
         </div>
@@ -75,10 +79,10 @@ function TreeNodeComponent({
   );
 }
 
-export default function FileTreeView({ tree, onAddFile, status }: FileTreeViewProps) {
+export default function FileTreeView({ tree, onAddFile, status, readOnly }: FileTreeViewProps) {
   return (
     <div className="file-tree">
-      <TreeNodeComponent node={tree} onAddFile={onAddFile} status={status} />
+      <TreeNodeComponent node={tree} onAddFile={onAddFile} status={status} readOnly={readOnly} />
     </div>
   );
 }

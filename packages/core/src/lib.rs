@@ -8,6 +8,7 @@ mod staging;
 mod branch;
 mod commit;
 mod diff;
+mod signature;
 
 use napi::Result;
 use std::path::PathBuf;
@@ -35,6 +36,25 @@ pub struct CommitInfo {
     pub author: String,
     pub timestamp: i64,
     pub parents: Vec<String>,
+    pub is_signed: bool,
+    pub public_key: Option<String>,
+    pub signature: Option<String>,
+}
+
+#[napi(object)]
+#[derive(Debug, Clone)]
+pub struct KeyPair {
+    pub public_key: String,
+    pub private_key: String,
+}
+
+#[napi(object)]
+#[derive(Debug, Clone)]
+pub struct SignatureVerification {
+    pub commit_id: String,
+    pub is_signed: bool,
+    pub verified: bool,
+    pub public_key: Option<String>,
 }
 
 #[napi(object)]
@@ -136,12 +156,18 @@ impl VfsRepo {
     pub fn get_commit(&self, commit_id: String) -> Result<CommitInfo> {
         let commit = self.repo.get_commit(&commit_id)
             .map_err(|e| napi::Error::from_reason(e.to_string()))?;
+        let is_signed = commit.is_signed();
+        let public_key = commit.public_key.clone();
+        let signature = commit.signature.clone();
         Ok(CommitInfo {
             id: commit.id,
             message: commit.message,
             author: commit.author,
             timestamp: commit.timestamp,
             parents: commit.parents,
+            is_signed,
+            public_key,
+            signature,
         })
     }
 
@@ -149,13 +175,91 @@ impl VfsRepo {
     pub fn get_commit_history(&self, branch: Option<String>) -> Result<Vec<CommitInfo>> {
         let commits = self.repo.get_commit_history(branch.as_deref())
             .map_err(|e| napi::Error::from_reason(e.to_string()))?;
-        Ok(commits.into_iter().map(|c| CommitInfo {
-            id: c.id,
-            message: c.message,
-            author: c.author,
-            timestamp: c.timestamp,
-            parents: c.parents,
+        Ok(commits.into_iter().map(|c| {
+            let is_signed = c.is_signed();
+            let public_key = c.public_key.clone();
+            let signature = c.signature.clone();
+            CommitInfo {
+                id: c.id,
+                message: c.message,
+                author: c.author,
+                timestamp: c.timestamp,
+                parents: c.parents,
+                is_signed,
+                public_key,
+                signature,
+            }
         }).collect())
+    }
+
+    #[napi]
+    pub fn commit_signed(&self, message: String, author: String, key_name: String) -> Result<String> {
+        self.repo.commit_signed(&message, &author, &key_name)
+            .map_err(|e| napi::Error::from_reason(e.to_string()))
+    }
+
+    #[napi]
+    pub fn generate_keypair(&self, name: String) -> Result<KeyPair> {
+        let keypair = self.repo.generate_keypair(&name)
+            .map_err(|e| napi::Error::from_reason(e.to_string()))?;
+        Ok(KeyPair {
+            public_key: keypair.public_key,
+            private_key: keypair.private_key,
+        })
+    }
+
+    #[napi]
+    pub fn list_keys(&self) -> Result<Vec<String>> {
+        self.repo.list_keys()
+            .map_err(|e| napi::Error::from_reason(e.to_string()))
+    }
+
+    #[napi]
+    pub fn verify_commit(&self, commit_id: String) -> Result<SignatureVerification> {
+        let commit = self.repo.get_commit(&commit_id)
+            .map_err(|e| napi::Error::from_reason(e.to_string()))?;
+        let is_signed = commit.is_signed();
+        let verified = if is_signed {
+            self.repo.verify_commit(&commit_id)
+                .map_err(|e| napi::Error::from_reason(e.to_string()))?
+        } else {
+            false
+        };
+        Ok(SignatureVerification {
+            commit_id: commit.id.clone(),
+            is_signed,
+            verified,
+            public_key: commit.public_key.clone(),
+        })
+    }
+
+    #[napi]
+    pub fn get_commit_at_time(&self, timestamp: i64) -> Result<Option<CommitInfo>> {
+        let commit = self.repo.get_commit_at_time(timestamp)
+            .map_err(|e| napi::Error::from_reason(e.to_string()))?;
+        Ok(commit.map(|c| {
+            let is_signed = c.is_signed();
+            let public_key = c.public_key.clone();
+            let signature = c.signature.clone();
+            CommitInfo {
+                id: c.id,
+                message: c.message,
+                author: c.author,
+                timestamp: c.timestamp,
+                parents: c.parents,
+                is_signed,
+                public_key,
+                signature,
+            }
+        }))
+    }
+
+    #[napi]
+    pub fn get_file_tree_at_commit(&self, commit_id: String) -> Result<String> {
+        let tree = self.repo.get_file_tree_at_commit(&commit_id)
+            .map_err(|e| napi::Error::from_reason(e.to_string()))?;
+        serde_json::to_string(&tree)
+            .map_err(|e| napi::Error::from_reason(e.to_string()))
     }
 
     #[napi]
