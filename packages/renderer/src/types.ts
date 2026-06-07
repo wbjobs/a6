@@ -66,6 +66,10 @@ declare global {
       readFile: (filePath: string) => Promise<{ content: string } | { error: string }>;
       writeFile: (filePath: string, content: string) => Promise<{ success: boolean } | { error: string }>;
       listDirectory: (dirPath: string) => Promise<FileEntry[] | { error: string }>;
+      getFileSize: (filePath: string) => Promise<{ size: number; isLarge: boolean } | { error: string }>;
+      readFileLarge: (filePath: string) => Promise<{ buffer: SharedArrayBuffer; size: number; path: string } | { error: string }>;
+      writeFileLarge: (filePath: string, buffer: SharedArrayBuffer, size: number) => Promise<{ success: boolean; size: number } | { error: string }>;
+      readBlobLarge: (hash: string) => Promise<{ buffer: SharedArrayBuffer; size: number; hash: string } | { error: string }>;
     };
   }
 }

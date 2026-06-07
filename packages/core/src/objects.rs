@@ -65,7 +65,8 @@ impl Tree {
     }
 
     pub fn insert(&mut self, path: &str, hash: String, is_dir: bool) {
-        let parts: Vec<&str> = path.splitn(2, '/').collect();
+        let normalized_path = path.replace('\\', "/");
+        let parts: Vec<&str> = normalized_path.splitn(2, '/').collect();
         if parts.len() == 1 {
             let name = parts[0].to_string();
             self.entries.insert(

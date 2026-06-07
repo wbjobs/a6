@@ -614,3 +614,51 @@ input[type="checkbox"] {
   cursor: pointer;
   accent-color: #89b4fa;
 }
+
+.diff-size-label {
+  font-size: 12px;
+  color: #6c7086;
+  margin-left: 12px;
+  font-weight: normal;
+}
+
+.diff-large-warning {
+  padding: 16px;
+  color: #f9e2af;
+  background: rgba(249, 226, 175, 0.1);
+  border-radius: 6px;
+  margin: 8px;
+}
+
+.diff-large-warning p {
+  margin: 8px 0;
+}
+
+.diff-truncated {
+  padding: 8px 16px;
+  color: #6c7086;
+  font-style: italic;
+  background: #11111b;
+}
+
+.diff-force-btn {
+  padding: 8px 16px;
+  background: #89b4fa;
+  color: #1e1e2e;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  margin-top: 8px;
+}
+
+.diff-force-btn:hover {
+  background: #74c7ec;
+}
+
+.diff-computing {
+  padding: 20px;
+  text-align: center;
+  color: #6c7086;
+  font-style: italic;
+}

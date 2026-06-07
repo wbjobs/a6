@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, protocol, net } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { loadVfsModule, VfsRepo, FileStatus, CommitInfo, DiffEntry, BranchInfo } from '@vfs/core';
@@ -9,6 +9,8 @@ let currentRepoPath: string | null = null;
 
 const { VfsRepo: VfsRepoClass } = loadVfsModule();
 
+const LARGE_FILE_THRESHOLD = 10 * 1024 * 1024;
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -17,7 +19,18 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: false,
     },
+  });
+
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Cross-Origin-Opener-Policy': ['same-origin'],
+        'Cross-Origin-Embedder-Policy': ['require-corp'],
+      },
+    });
   });
 
   const rendererPath = path.join(__dirname, '..', '..', 'renderer', 'dist', 'index.html');
@@ -258,8 +271,75 @@ ipcMain.handle('list-directory', async (_event, dirPath: string) => {
       .map((e) => ({
         name: e.name,
         isDir: e.isDirectory(),
-        path: dirPath ? path.join(dirPath, e.name) : e.name,
+        path: dirPath ? path.join(dirPath, e.name).replace(/\\/g, '/') : e.name,
       }));
+  } catch (e: any) {
+    return { error: e.message };
+  }
+});
+
+ipcMain.handle('get-file-size', async (_event, filePath: string) => {
+  if (!currentRepoPath) return { error: 'No repository opened' };
+  try {
+    const normalizedPath = filePath.replace(/\\/g, '/');
+    const fullPath = path.join(currentRepoPath, normalizedPath);
+    const stats = fs.statSync(fullPath);
+    return { size: stats.size, isLarge: stats.size > LARGE_FILE_THRESHOLD };
+  } catch (e: any) {
+    return { error: e.message };
+  }
+});
+
+ipcMain.handle('read-file-large', async (event, filePath: string) => {
+  if (!currentRepoPath) return { error: 'No repository opened' };
+  try {
+    const normalizedPath = filePath.replace(/\\/g, '/');
+    const fullPath = path.join(currentRepoPath, normalizedPath);
+    const buffer = fs.readFileSync(fullPath);
+    const sharedBuffer = new SharedArrayBuffer(buffer.length);
+    const view = new Uint8Array(sharedBuffer);
+    view.set(buffer);
+    return {
+      buffer: sharedBuffer,
+      size: buffer.length,
+      path: normalizedPath,
+    };
+  } catch (e: any) {
+    return { error: e.message };
+  }
+});
+
+ipcMain.handle('write-file-large', async (event, filePath: string, buffer: SharedArrayBuffer, size: number) => {
+  if (!currentRepoPath) return { error: 'No repository opened' };
+  try {
+    const normalizedPath = filePath.replace(/\\/g, '/');
+    const fullPath = path.join(currentRepoPath, normalizedPath);
+    const dir = path.dirname(fullPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    const view = new Uint8Array(buffer, 0, size);
+    fs.writeFileSync(fullPath, view);
+    return { success: true, size };
+  } catch (e: any) {
+    return { error: e.message };
+  }
+});
+
+ipcMain.handle('read-blob-large', async (event, hash: string) => {
+  if (!repo) return { error: 'No repository opened' };
+  try {
+    const content = repo.readBlob(hash);
+    const encoder = new TextEncoder();
+    const buffer = encoder.encode(content);
+    const sharedBuffer = new SharedArrayBuffer(buffer.length);
+    const view = new Uint8Array(sharedBuffer);
+    view.set(buffer);
+    return {
+      buffer: sharedBuffer,
+      size: buffer.length,
+      hash,
+    };
   } catch (e: any) {
     return { error: e.message };
   }

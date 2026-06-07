@@ -446,7 +446,11 @@ impl Repository {
         );
 
         for (path, entry) in &staging.entries {
-            let parts: Vec<&str> = path.split('/').collect();
+            let normalized_path = path.replace('\\', "/");
+            let parts: Vec<&str> = normalized_path.split('/').collect();
+            if parts.is_empty() {
+                continue;
+            }
             let file_name = parts[parts.len() - 1];
             let dir_path = if parts.len() > 1 {
                 parts[0..parts.len() - 1].join("/")
@@ -472,7 +476,9 @@ impl Repository {
                 }
             }
 
-            let dir = root.get_mut(&dir_path).unwrap();
+            let dir = root.get_mut(&dir_path).ok_or_else(|| {
+                format!("Directory not found in tree structure: {}", dir_path)
+            })?;
             dir.entries.insert(
                 file_name.to_string(),
                 (entry.hash.clone(), false),
@@ -485,7 +491,9 @@ impl Repository {
         let mut tree_hashes: BTreeMap<String, String> = BTreeMap::new();
 
         for dir_path in dir_paths {
-            let dir = root.get(&dir_path).unwrap();
+            let dir = root.get(&dir_path).ok_or_else(|| {
+                format!("Directory not found: {}", dir_path)
+            })?;
             let mut tree = Tree::new();
 
             for (name, (hash, is_dir)) in &dir.entries {
@@ -518,8 +526,15 @@ impl Repository {
                 .collect();
 
             for subdir_path in &subdirs {
-                let subdir_name = subdir_path.split('/').last().unwrap().to_string();
-                let subdir_hash = tree_hashes.get(subdir_path).cloned().unwrap();
+                let subdir_name = subdir_path
+                    .split('/')
+                    .last()
+                    .ok_or_else(|| format!("Invalid subdirectory path: {}", subdir_path))?
+                    .to_string();
+                let subdir_hash = tree_hashes
+                    .get(subdir_path)
+                    .cloned()
+                    .ok_or_else(|| format!("Subdirectory hash not found: {}", subdir_path))?;
                 tree.entries.insert(
                     subdir_name.clone(),
                     TreeNode {
@@ -534,7 +549,9 @@ impl Repository {
             tree_hashes.insert(dir_path, tree_hash);
         }
 
-        let root_hash = tree_hashes.get("").unwrap();
+        let root_hash = tree_hashes
+            .get("")
+            .ok_or_else(|| "Root tree hash not found".to_string())?;
         self.storage.read_object::<Tree>(root_hash)
     }
 

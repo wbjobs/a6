@@ -15,6 +15,10 @@ use std::path::PathBuf;
 pub use objects::{Blob, Commit, Tree, TreeNode};
 pub use repo::Repository;
 
+fn normalize_path(path: &str) -> PathBuf {
+    PathBuf::from(path.replace('\\', "/"))
+}
+
 #[napi(object)]
 #[derive(Debug, Clone)]
 pub struct FileStatus {
@@ -100,13 +104,13 @@ impl VfsRepo {
 
     #[napi]
     pub fn add_file(&self, file_path: String) -> Result<()> {
-        self.repo.add_file(&PathBuf::from(file_path))
+        self.repo.add_file(&normalize_path(&file_path))
             .map_err(|e| napi::Error::from_reason(e.to_string()))
     }
 
     #[napi]
     pub fn remove_file(&self, file_path: String) -> Result<()> {
-        self.repo.remove_file(&PathBuf::from(file_path))
+        self.repo.remove_file(&normalize_path(&file_path))
             .map_err(|e| napi::Error::from_reason(e.to_string()))
     }
 

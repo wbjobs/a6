@@ -45,9 +45,9 @@ const api = {
   isInitialized: (): Promise<boolean> =>
     ipcRenderer.invoke('is-initialized'),
   addFile: (filePath: string): Promise<{ success: boolean } | { error: string }> =>
-    ipcRenderer.invoke('add-file', filePath),
+    ipcRenderer.invoke('add-file', filePath.replace(/\\/g, '/')),
   removeFile: (filePath: string): Promise<{ success: boolean } | { error: string }> =>
-    ipcRenderer.invoke('remove-file', filePath),
+    ipcRenderer.invoke('remove-file', filePath.replace(/\\/g, '/')),
   getStagedFiles: (): Promise<string[] | { error: string }> =>
     ipcRenderer.invoke('get-staged-files'),
   getStatus: (): Promise<FileStatus[] | { error: string }> =>
@@ -75,11 +75,19 @@ const api = {
   getFileTree: (commitId?: string): Promise<any | { error: string }> =>
     ipcRenderer.invoke('get-file-tree', commitId),
   readFile: (filePath: string): Promise<{ content: string } | { error: string }> =>
-    ipcRenderer.invoke('read-file', filePath),
+    ipcRenderer.invoke('read-file', filePath.replace(/\\/g, '/')),
   writeFile: (filePath: string, content: string): Promise<{ success: boolean } | { error: string }> =>
-    ipcRenderer.invoke('write-file', filePath, content),
+    ipcRenderer.invoke('write-file', filePath.replace(/\\/g, '/'), content),
   listDirectory: (dirPath: string): Promise<FileEntry[] | { error: string }> =>
-    ipcRenderer.invoke('list-directory', dirPath),
+    ipcRenderer.invoke('list-directory', dirPath.replace(/\\/g, '/')),
+  getFileSize: (filePath: string): Promise<{ size: number; isLarge: boolean } | { error: string }> =>
+    ipcRenderer.invoke('get-file-size', filePath.replace(/\\/g, '/')),
+  readFileLarge: (filePath: string): Promise<{ buffer: SharedArrayBuffer; size: number; path: string } | { error: string }> =>
+    ipcRenderer.invoke('read-file-large', filePath.replace(/\\/g, '/')),
+  writeFileLarge: (filePath: string, buffer: SharedArrayBuffer, size: number): Promise<{ success: boolean; size: number } | { error: string }> =>
+    ipcRenderer.invoke('write-file-large', filePath.replace(/\\/g, '/'), buffer, size),
+  readBlobLarge: (hash: string): Promise<{ buffer: SharedArrayBuffer; size: number; hash: string } | { error: string }> =>
+    ipcRenderer.invoke('read-blob-large', hash),
 };
 
 contextBridge.exposeInMainWorld('vfsApi', api);
