@@ -1,0 +1,13 @@
+{
+  "name": "@vfs/core",
+  "version": "0.1.0",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "build": "cargo build --release && node scripts/copy.js",
+    "build:debug": "cargo build && node scripts/copy.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0"
+  }
+}

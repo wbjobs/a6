@@ -1,0 +1,10 @@
+E:\trae3\a6\packages\core\target\release\deps\napi_derive-196b29d1c59346c5.d: C:\Users\61910\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\napi-derive-2.16.13\src\lib.rs C:\Users\61910\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\napi-derive-2.16.13\src\compat_macro.rs C:\Users\61910\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\napi-derive-2.16.13\src\expand.rs C:\Users\61910\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\napi-derive-2.16.13\src\parser\mod.rs C:\Users\61910\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\napi-derive-2.16.13\src\parser\attrs.rs C:\Users\61910\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\napi-derive-2.16.13\src\expand\napi.rs
+
+E:\trae3\a6\packages\core\target\release\deps\napi_derive-196b29d1c59346c5.dll: C:\Users\61910\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\napi-derive-2.16.13\src\lib.rs C:\Users\61910\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\napi-derive-2.16.13\src\compat_macro.rs C:\Users\61910\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\napi-derive-2.16.13\src\expand.rs C:\Users\61910\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\napi-derive-2.16.13\src\parser\mod.rs C:\Users\61910\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\napi-derive-2.16.13\src\parser\attrs.rs C:\Users\61910\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\napi-derive-2.16.13\src\expand\napi.rs
+
+C:\Users\61910\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\napi-derive-2.16.13\src\lib.rs:
+C:\Users\61910\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\napi-derive-2.16.13\src\compat_macro.rs:
+C:\Users\61910\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\napi-derive-2.16.13\src\expand.rs:
+C:\Users\61910\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\napi-derive-2.16.13\src\parser\mod.rs:
+C:\Users\61910\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\napi-derive-2.16.13\src\parser\attrs.rs:
+C:\Users\61910\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\napi-derive-2.16.13\src\expand\napi.rs:

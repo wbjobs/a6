@@ -1,0 +1,21 @@
+{
+  "name": "vfs-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build:rust": "npm run build -w @vfs/core",
+    "build:renderer": "npm run build -w @vfs/renderer",
+    "build": "npm run build:rust && npm run build:renderer",
+    "dev:renderer": "npm run dev -w @vfs/renderer",
+    "dev:electron": "npm run dev -w @vfs/electron",
+    "dev": "npm run build:rust && npm run dev:renderer",
+    "start": "npm run build:rust && npm run build:renderer && npm run start -w @vfs/electron"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/node": "^20.11.0"
+  }
+}
